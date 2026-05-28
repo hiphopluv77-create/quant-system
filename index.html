@@ -94,7 +94,7 @@
             document.getElementById('simulationResult').style.display = 'none';
 
             try {
-                const response = await fetch('/api/analyze?ticker=' + encodeURIComponent(ticker));
+                const response = await fetch('https://project-9eedf.vercel.app/api/analyze?ticker=' + encodeURIComponent(ticker));
                 const data = await response.json();
 
                 serverResistance = data.resistanceLine;
