@@ -2,65 +2,101 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>구간대응 최종 퀀트 엔진</title>
+    <title>구간대응 & 차트분석 통합 엔진</title>
     <style>
         body { font-family: 'Malgun Gothic', sans-serif; background-color: #f8f9fa; padding: 20px; }
         .card { background: white; border-radius: 12px; padding: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-bottom: 20px; }
         input { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ced4da; border-radius: 6px; box-sizing: border-box; }
-        button { width: 100%; padding: 15px; background-color: #1a365d; color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; }
-        .result-box { background: #f1f5f9; padding: 15px; border-radius: 8px; line-height: 1.8; font-size: 14px; }
+        button { width: 100%; padding: 15px; background-color: #1a365d; color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; margin-top: 10px; }
+        .result-box { background: #f1f5f9; padding: 15px; border-radius: 8px; line-height: 1.8; font-size: 14px; margin-bottom: 15px; }
+        .chart-box { background: #e2e8f0; border-left: 4px solid #4a5568; padding: 15px; border-radius: 8px; line-height: 1.6; font-size: 14px; }
         .highlight { font-weight: bold; color: #c53030; }
+        .blue { color: #2b6cb0; font-weight: bold; }
+        h3 { margin-top: 0; font-size: 16px; border-bottom: 2px solid #cbd5e1; padding-bottom: 8px; }
     </style>
 </head>
 <body>
 
 <div class="card">
-    <h2>🎯 파도타기 & 본전 직행 시뮬레이터</h2>
-    <input type="text" id="ticker" placeholder="종목명">
-    <input type="number" id="avgPrice" placeholder="평단가">
+    <h2>🎯 퀀트 구간대응 & 차트분석</h2>
+    <input type="text" id="ticker" placeholder="종목명 (예: 이수페타시스)">
+    <input type="number" id="avgPrice" placeholder="나의 평단가">
     <input type="number" id="shares" placeholder="보유주수">
-    <input type="number" id="resPrice" placeholder="설정 저항선">
-    <button onclick="calculateStrategy()">전략 시뮬레이션</button>
+    <input type="number" id="resPrice" placeholder="설정 저항선 (목표 매도가)">
+    <button onclick="fetchAndCalculate()" id="analyzeBtn">키움 API 차트 연동 및 전략 계산</button>
 </div>
 
 <div class="card" id="resultCard" style="display:none;">
-    <div id="output" class="result-box"></div>
+    <h3>📊 서버 차트 분석 요약 (일봉/주봉 기준)</h3>
+    <div id="chartOutput" class="chart-box"></div>
+    
+    <h3 style="margin-top: 20px;">🔄 능동적 구간대응 시나리오</h3>
+    <div id="strategyOutput" class="result-box"></div>
 </div>
 
 <script>
-function calculateStrategy() {
+async function fetchAndCalculate() {
+    const ticker = document.getElementById('ticker').value;
     const avg = parseInt(document.getElementById('avgPrice').value);
     const shares = parseInt(document.getElementById('shares').value);
     const res = parseInt(document.getElementById('resPrice').value);
-    
-    // 1. 파도타기 로직 (25%)
-    const actionShares = Math.floor(shares * 0.25);
-    const realizedPL = actionShares * (res - avg);
-    const newTotalShares = shares - actionShares; // 매도 후 남은 주수
-    const newAvg = (avg * shares - actionShares * res) / newTotalShares;
-    const cashSecured = actionShares * res;
 
-    // 2. 본전 직행 로직
-    const initialLoss = actionShares * (avg - res); // 예: 870,000원
-    const remainingShares = shares - actionShares;
-    const breakEvenPrice = ((avg * shares) + initialLoss) / remainingShares;
+    if(!ticker || !avg || !shares || !res) { alert("모든 입력값을 확인해주세요."); return; }
 
-    const output = document.getElementById('output');
-    document.getElementById('resultCard').style.display = 'block';
+    const btn = document.getElementById('analyzeBtn');
+    btn.innerText = "키움 일봉/주봉 데이터 통신 중... ⏳";
+    btn.disabled = true;
 
-    output.innerHTML = `
-        <strong>🎯 [시나리오 A] 파도타기 1회 성공 시</strong><br>
-        - 활용 물량: 매회 ${actionShares}주 (25%)<br>
-        - 누적 확정 손실(또는 수익): <span class="highlight">${realizedPL.toLocaleString()}원</span><br>
-        - 새로운 평단가: ${Math.floor(newAvg).toLocaleString()}원 (총 ${newTotalShares}주)<br>
-        - 확보한 총 현금: +${cashSecured.toLocaleString()}원<br><br>
-        
-        <strong>🚀 [시나리오 B] 단번 돌파 시 (본전 직행)</strong><br>
-        - 본전 도달 시 ${actionShares}주 추가 매도 대응<br>
-        - 최종 남은 물량: ${shares - (actionShares * 2)}주<br>
-        - 초기 확정 손실: <span class="highlight">${realizedPL.toLocaleString()}원</span><br>
-        - 손실 100% 복구 주가: <span class="highlight">${Math.floor(breakEvenPrice).toLocaleString()}원</span>
-    `;
+    try {
+        // Vercel 서버로 통신하여 차트 데이터를 긁어옵니다.
+        const response = await fetch('https://project-9eedf.vercel.app/api/analyze?ticker=' + encodeURIComponent(ticker));
+        const chartData = await response.json();
+
+        // 1. 차트 분석 결과 출력 (이평선, 볼린저밴드, RSI)
+        const chartOutput = document.getElementById('chartOutput');
+        chartOutput.innerHTML = `
+            <strong>현재가:</strong> ${chartData.currentPrice.toLocaleString()}원<br>
+            <strong>주요 이평선:</strong> 5일(${chartData.ma5.toLocaleString()}) / 20일(${chartData.ma20.toLocaleString()}) / 60일(${chartData.ma60.toLocaleString()}) / 120일(${chartData.ma120.toLocaleString()})<br>
+            <strong>볼린저 밴드:</strong> 상단 <span class="highlight">${chartData.bollingerUpper.toLocaleString()}원</span> / 하단 <span class="blue">${chartData.bollingerLower.toLocaleString()}원</span><br>
+            <strong>보조지표 상태:</strong> RSI ${chartData.rsi} | ${chartData.trend}
+        `;
+
+        // 2. 구간 대응 전략 계산 로직
+        const actionShares25 = Math.floor(shares * 0.25);
+        const actionShares50 = Math.floor(shares * 0.50);
+
+        // [시나리오 A: 파도타기]
+        const realizedPL = actionShares25 * (res - avg);
+        const newTotalShares = shares - actionShares25;
+        const newAvg = (avg * shares - actionShares25 * res) / newTotalShares;
+        const cashSecured = actionShares25 * res;
+
+        // [시나리오 B: 본전 직행 능동 복구]
+        const totalCost = avg * shares;
+        const targetPrice = (totalCost - (actionShares25 * res) - (actionShares25 * avg)) / actionShares50;
+
+        const strategyOutput = document.getElementById('strategyOutput');
+        strategyOutput.innerHTML = `
+            <strong>[1. 시나리오 A: 파도타기]</strong><br>
+            - 25% 저항선 대응: ${actionShares25}주 매도<br>
+            - 확정 손익: <span class="${realizedPL >= 0 ? 'highlight' : 'blue'}">${realizedPL.toLocaleString()}원</span><br>
+            - <strong>새로운 평단가:</strong> <span class="highlight">${Math.floor(newAvg).toLocaleString()}원</span> (남은 ${newTotalShares}주)<br>
+            - 확보한 현금: +${cashSecured.toLocaleString()}원<br><br>
+            
+            <strong>[2. 시나리오 B: 슈팅 시 본전 직행]</strong><br>
+            - 저항선 매도(25%): ${actionShares25}주 @ ${res.toLocaleString()}원<br>
+            - 본전 방어 매도(25%): ${actionShares25}주 @ ${avg.toLocaleString()}원<br>
+            - <strong>회복 목표가:</strong> 나머지 50%를 <span class="highlight">${Math.floor(targetPrice).toLocaleString()}원</span>에 매도 시 전체 손실 0원 (본전).
+        `;
+
+        document.getElementById('resultCard').style.display = 'block';
+
+    } catch (e) {
+        alert("통신 에러: API 서버 상태를 확인해주세요.");
+    } finally {
+        btn.innerText = "키움 API 차트 연동 및 전략 계산";
+        btn.disabled = false;
+    }
 }
 </script>
 </body>
