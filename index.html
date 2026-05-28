@@ -23,6 +23,7 @@
         
         .warning-box { background-color: #fff3cd; color: #856404; padding: 12px; border-radius: 8px; font-size: 14px; margin-top: 15px; border-left: 4px solid #ffeeba; line-height: 1.5; }
         .bastion-box { background-color: #d1ecf1; color: #0c5460; padding: 12px; border-radius: 8px; font-size: 14px; margin-top: 10px; border-left: 4px solid #bee5eb; line-height: 1.5; }
+        .simulation-box { background-color: #e2e8f0; color: #1e293b; padding: 15px; border-radius: 8px; font-size: 14px; margin-top: 15px; border-left: 4px solid #64748b; line-height: 1.6; display: none; }
     </style>
 </head>
 <body>
@@ -42,6 +43,7 @@
         <button onclick="showAnalysis()">분석 결과 및 지지/저항 확인</button>
     </div>
 
+    <!-- 분석 결과 창 -->
     <div class="card result-section" id="resultCard">
         <h3 style="font-size: 16px; margin-top: 0; border-bottom: 2px solid #333; padding-bottom: 10px;">📉 AI 차트 판독 결과</h3>
         
@@ -51,11 +53,11 @@
         </div>
         <div class="data-row">
             <span>주요 저항선 (위 이평선/볼밴)</span>
-            <span class="highlight-red" id="resistanceLine">162,000 원 (볼린저 상단)</span>
+            <span class="highlight-red" id="resistanceLine">162,000 원</span>
         </div>
         <div class="data-row">
             <span>주요 지지선 (아래 이평선/볼밴)</span>
-            <span class="highlight-blue" id="supportLine">141,000 원 (60일선)</span>
+            <span class="highlight-blue" id="supportLine">141,000 원</span>
         </div>
 
         <div class="warning-box" id="disparityWarning">
@@ -66,7 +68,10 @@
             <strong>🛡️ 주봉 최종 보루:</strong> 주봉 120일선 위치는 <span style="color:blue; font-weight:bold;">135,000 원</span>입니다. 일봉 지지선 이탈 시 이 가격을 최후의 방어선으로 비중을 관리하세요.
         </div>
 
-        <button style="background-color: #4b5563; margin-top: 15px;" onclick="alert('추후 매도/재매수 시뮬레이션 기능이 연결됩니다.')">매도/재매수 시뮬레이션 실행</button>
+        <button style="background-color: #4b5563; margin-top: 15px;" onclick="runSimulation()">매도/재매수 시뮬레이션 실행</button>
+        
+        <!-- 시뮬레이션 결과가 출력될 공간 -->
+        <div class="simulation-box" id="simulationResult"></div>
     </div>
 
     <script>
@@ -75,14 +80,44 @@
             const avgPrice = document.getElementById('avgPrice').value;
             const shares = document.getElementById('shares').value;
 
-            // 빈칸 검사
             if(!ticker || !avgPrice || !shares) {
                 alert('종목명, 평단가, 보유주수를 모두 입력해주세요.');
                 return;
             }
-
-            // 숨겨져 있던 결과창을 무조건 화면에 띄움 (서버 통신 제거)
             document.getElementById('resultCard').style.display = 'block';
+            document.getElementById('simulationResult').style.display = 'none'; // 초기화
+        }
+
+        function runSimulation() {
+            const avgPrice = parseInt(document.getElementById('avgPrice').value);
+            const shares = parseInt(document.getElementById('shares').value);
+            const resistancePrice = 162000; // 차트 판독 저항선 (현재 하드코딩)
+            const supportPrice = 141000;   // 차트 판독 지지선 (현재 하드코딩)
+
+            // 절반 매도 시뮬레이션
+            const halfShares = Math.floor(shares / 2);
+            const sellAmount = halfShares * resistancePrice;
+            const profit = halfShares * (resistancePrice - avgPrice);
+            
+            // 전량 매도 가정 시
+            const allSellAmount = shares * resistancePrice;
+            const allProfit = shares * (resistancePrice - avgPrice);
+
+            const simBox = document.getElementById('simulationResult');
+            simBox.style.display = 'block';
+            simBox.innerHTML = `
+                <strong style="font-size: 15px;">🔄 저항선(${resistancePrice.toLocaleString()}원) 도달 시 시나리오</strong><br><br>
+                <strong>[시나리오 A] 코어 앤 세틀라이트 (절반 매도)</strong><br>
+                - <strong>${halfShares}주 매도</strong> 시 확보 현금: ${sellAmount.toLocaleString()}원<br>
+                - <strong>확정 수익:</strong> <span style="color:#e15241; font-weight:bold;">+${profit.toLocaleString()}원</span><br>
+                - <strong>잔여 물량:</strong> ${shares - halfShares}주 홀딩<br>
+                - <strong>재매수 전략:</strong> 하락하여 지지선(${supportPrice.toLocaleString()}원) 안착 시 확보된 현금으로 재매수 진행<br><br>
+                
+                <strong>[시나리오 B] 저항 돌파 실패 (전량 매도)</strong><br>
+                - <strong>${shares}주 매도</strong> 시 확보 현금: ${allSellAmount.toLocaleString()}원<br>
+                - <strong>확정 수익:</strong> <span style="color:#e15241; font-weight:bold;">+${allProfit.toLocaleString()}원</span><br>
+                - 💡 <em>주의: 모든 매도가 끝나더라도 박자감을 놓치지 않기 위해 시장가로 1주를 다시 매수하여 <strong>정찰병 역할</strong>로 남겨두세요!</em>
+            `;
         }
     </script>
 </body>
