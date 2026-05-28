@@ -14,7 +14,6 @@
         button { width: 100%; padding: 16px; background-color: #3182f6; color: white; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; margin-top: 20px; }
         button:active { background-color: #1b64da; }
         
-        /* 결과창 스타일 */
         .result-section { display: none; }
         .data-row { display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #eee; }
         .data-row span:first-child { color: #666; font-size: 14px; }
@@ -22,7 +21,6 @@
         .highlight-red { color: #e15241; }
         .highlight-blue { color: #3182f6; }
         
-        /* 보조지표 경고창 */
         .warning-box { background-color: #fff3cd; color: #856404; padding: 12px; border-radius: 8px; font-size: 14px; margin-top: 15px; border-left: 4px solid #ffeeba; line-height: 1.5; }
         .bastion-box { background-color: #d1ecf1; color: #0c5460; padding: 12px; border-radius: 8px; font-size: 14px; margin-top: 10px; border-left: 4px solid #bee5eb; line-height: 1.5; }
     </style>
@@ -32,8 +30,8 @@
     <div class="card">
         <h2>📊 구간 대응 & 시뮬레이터</h2>
         
-        <label>종목코드 (6자리)</label>
-        <input type="number" id="ticker" placeholder="예: 005930">
+        <label>종목명 또는 종목코드</label>
+        <input type="text" id="ticker" placeholder="예: 이수페타시스 또는 041510">
         
         <label>나의 평단가 (원)</label>
         <input type="number" id="avgPrice" placeholder="예: 75000">
@@ -78,39 +76,4 @@
             const shares = document.getElementById('shares').value;
 
             if(!ticker || !avgPrice || !shares) {
-                alert('종목코드, 평단가, 보유주수를 모두 입력해주세요.');
-                return;
-            }
-
-            // 결과창 보이기 및 로딩 상태
-            document.getElementById('resultCard').style.display = 'block';
-            document.getElementById('currentPrice').innerText = "로딩 중...";
-            
-            try {
-                // 선호님의 Vercel 서버(analyze.js)로 데이터를 요청합니다.
-                // (현재는 UI 테스트용 더미 데이터를 뿌려줍니다)
-                const response = await fetch(`/api/analyze?ticker=${ticker}`);
-                const data = await response.json();
-
-                // 화면에 데이터 뿌리기 (추후 키움 API 실데이터로 연결)
-                document.getElementById('currentPrice').innerText = "150,000 원";
-                document.getElementById('resistanceLine').innerText = "162,000 원 (볼린저 상단)";
-                document.getElementById('supportLine').innerText = "141,000 원 (60일선)";
-                
-                // 1. 이격도 경고 출력
-                document.getElementById('disparityWarning').innerHTML = `
-                    <strong>⚠️ 이격도 체크:</strong> 현재 주가가 20일선 대비 <span style="color:red; font-weight:bold;">112%</span>로 벌어져 있습니다. 저항선 도달 전이라도 절반(Core&Satellite) 비중 축소를 권고합니다.
-                `;
-
-                // 2. 주봉 최종 보루 출력
-                document.getElementById('weeklyBastion').innerHTML = `
-                    <strong>🛡️ 주봉 최종 보루:</strong> 주봉 120일선 위치는 <span style="color:blue; font-weight:bold;">135,000 원</span>입니다. 일봉 지지선 이탈 시 이 가격을 최후의 방어선으로 비중을 관리하세요.
-                `;
-
-            } catch (error) {
-                alert("서버 통신 에러가 발생했습니다.");
-            }
-        }
-    </script>
-</body>
-</html>
+                alert('종목명(또는 코드), 평단
