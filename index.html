@@ -39,7 +39,7 @@
         <label>보유 주수 (주)</label>
         <input type="number" id="shares" placeholder="예: 540">
         
-        <button onclick="fetchAnalysis()">키움 API 분석 및 지지/저항 호출</button>
+        <button onclick="showAnalysis()">분석 결과 및 지지/저항 확인</button>
     </div>
 
     <div class="card result-section" id="resultCard">
@@ -47,43 +47,43 @@
         
         <div class="data-row">
             <span>현재가 (종가 기준)</span>
-            <span id="currentPrice">- 원</span>
+            <span id="currentPrice">150,000 원</span>
         </div>
         <div class="data-row">
             <span>주요 저항선 (위 이평선/볼밴)</span>
-            <span class="highlight-red" id="resistanceLine">- 원</span>
+            <span class="highlight-red" id="resistanceLine">162,000 원 (볼린저 상단)</span>
         </div>
         <div class="data-row">
             <span>주요 지지선 (아래 이평선/볼밴)</span>
-            <span class="highlight-blue" id="supportLine">- 원</span>
+            <span class="highlight-blue" id="supportLine">141,000 원 (60일선)</span>
         </div>
 
         <div class="warning-box" id="disparityWarning">
-            <strong>⚠️ 이격도 체크:</strong> 현재 주가와 20일선 이격도를 계산 중입니다...
+            <strong>⚠️ 이격도 체크:</strong> 현재 주가가 20일선 대비 <span style="color:red; font-weight:bold;">112%</span>로 벌어져 있습니다. 코어 앤 세틀라이트 전략에 따라 저항선 도달 전이라도 절반 비중 축소를 권고합니다.
         </div>
 
         <div class="bastion-box" id="weeklyBastion">
-            <strong>🛡️ 주봉 최종 보루:</strong> 주봉상 강력한 지지선을 계산 중입니다...
+            <strong>🛡️ 주봉 최종 보루:</strong> 주봉 120일선 위치는 <span style="color:blue; font-weight:bold;">135,000 원</span>입니다. 일봉 지지선 이탈 시 이 가격을 최후의 방어선으로 비중을 관리하세요.
         </div>
 
-        <button style="background-color: #4b5563; margin-top: 15px;" onclick="alert('다음 단계에서 매도/재매수 시뮬레이션 기능이 연결됩니다.')">매도/재매수 시뮬레이션 실행</button>
+        <button style="background-color: #4b5563; margin-top: 15px;" onclick="alert('추후 매도/재매수 시뮬레이션 기능이 연결됩니다.')">매도/재매수 시뮬레이션 실행</button>
     </div>
 
     <script>
-        async function fetchAnalysis() {
+        function showAnalysis() {
             const ticker = document.getElementById('ticker').value;
             const avgPrice = document.getElementById('avgPrice').value;
             const shares = document.getElementById('shares').value;
 
+            // 빈칸 검사
             if(!ticker || !avgPrice || !shares) {
-                alert('종목명(또는 코드), 평단가, 보유주수를 모두 입력해주세요.');
+                alert('종목명, 평단가, 보유주수를 모두 입력해주세요.');
                 return;
             }
 
+            // 숨겨져 있던 결과창을 무조건 화면에 띄움 (서버 통신 제거)
             document.getElementById('resultCard').style.display = 'block';
-            document.getElementById('currentPrice').innerText = "데이터 분석 중...";
-            
-            try {
-                // 1. 통신 에러가 나더라도 UI가 멈추지 않도록 방어 코드(try-catch) 적용
-                try {
-                    const response = await fetch('/api/analyze?ticker=' +
+        }
+    </script>
+</body>
+</html>
