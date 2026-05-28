@@ -34,7 +34,7 @@
         <input type="text" id="ticker" placeholder="예: 이수페타시스 또는 041510">
         
         <label>나의 평단가 (원)</label>
-        <input type="number" id="avgPrice" placeholder="예: 75000">
+        <input type="number" id="avgPrice" placeholder="예: 122700">
         
         <label>보유 주수 (주)</label>
         <input type="number" id="shares" placeholder="예: 540">
@@ -76,4 +76,14 @@
             const shares = document.getElementById('shares').value;
 
             if(!ticker || !avgPrice || !shares) {
-                alert('종목명(또는 코드), 평단
+                alert('종목명(또는 코드), 평단가, 보유주수를 모두 입력해주세요.');
+                return;
+            }
+
+            document.getElementById('resultCard').style.display = 'block';
+            document.getElementById('currentPrice').innerText = "데이터 분석 중...";
+            
+            try {
+                // 1. 통신 에러가 나더라도 UI가 멈추지 않도록 방어 코드(try-catch) 적용
+                try {
+                    const response = await fetch('/api/analyze?ticker=' +
