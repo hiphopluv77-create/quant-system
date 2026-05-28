@@ -2,180 +2,63 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>구간 대응 계산기</title>
+    <title>구간대응 최종 퀀트 계산기</title>
     <style>
-        body { font-family: 'Malgun Gothic', sans-serif; background-color: #f2f4f6; margin: 0; padding: 20px; color: #333; }
+        body { font-family: 'Malgun Gothic', sans-serif; background-color: #f2f4f6; padding: 20px; }
         .card { background: white; border-radius: 16px; padding: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); margin-bottom: 20px; }
-        h2 { text-align: center; font-size: 20px; margin-top: 0; color: #111; }
-        label { font-size: 14px; font-weight: bold; color: #555; display: block; margin-top: 15px; margin-bottom: 5px; }
-        input { width: 100%; padding: 14px; border: 1px solid #e5e8eb; border-radius: 8px; box-sizing: border-box; font-size: 16px; background-color: #f9fafb; }
-        input:focus { outline: none; border-color: #3182f6; }
-        button { width: 100%; padding: 16px; background-color: #3182f6; color: white; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; margin-top: 20px; }
-        button:active { background-color: #1b64da; }
-        
-        .result-section { display: none; }
-        .data-row { display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #eee; }
-        .data-row span:first-child { color: #666; font-size: 14px; }
-        .data-row span:last-child { font-weight: bold; font-size: 15px; }
-        .highlight-red { color: #e15241; }
-        .highlight-blue { color: #3182f6; }
-        
-        .warning-box { background-color: #fff3cd; color: #856404; padding: 12px; border-radius: 8px; font-size: 14px; margin-top: 15px; border-left: 4px solid #ffeeba; line-height: 1.5; }
-        .bastion-box { background-color: #d1ecf1; color: #0c5460; padding: 12px; border-radius: 8px; font-size: 14px; margin-top: 10px; border-left: 4px solid #bee5eb; line-height: 1.5; }
-        .simulation-box { background-color: #e2e8f0; color: #1e293b; padding: 15px; border-radius: 8px; font-size: 14px; margin-top: 15px; border-left: 4px solid #64748b; line-height: 1.6; display: none; }
+        input { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ccc; border-radius: 8px; box-sizing: border-box; }
+        button { width: 100%; padding: 15px; background-color: #2b6cb0; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; }
+        .result-box { background: #edf2f7; padding: 15px; border-radius: 8px; margin-top: 20px; line-height: 1.6; }
     </style>
 </head>
 <body>
 
-    <div class="card">
-        <h2>📊 구간 대응 & 시뮬레이터</h2>
+<div class="card">
+    <h2>🎯 구간대응 최종 엔진</h2>
+    <input type="text" id="ticker" placeholder="종목명">
+    <input type="number" id="avgPrice" placeholder="평단가">
+    <input type="number" id="shares" placeholder="보유주수">
+    <button onclick="calculateFinal()">최종 분석 실행</button>
+</div>
+
+<div class="card" id="resultCard" style="display:none;">
+    <div id="output" class="result-box"></div>
+</div>
+
+<script>
+async function calculateFinal() {
+    const avg = parseInt(document.getElementById('avgPrice').value);
+    const shares = parseInt(document.getElementById('shares').value);
+    
+    // 분석을 위한 임시 테스트 주가 (키움 API 연동 시 이 부분을 실제 데이터로 교체)
+    const currentPrice = 125000;
+    const resLine = 135000; // 1차 저항
+    const supLine = 115000; // 1차 지지
+    
+    // 1. 핵심 로직: 25% 물량 구간 대응
+    const actionShares = Math.floor(shares * 0.25);
+    const realizedPL = actionShares * (resLine - avg);
+    
+    // 2. 시나리오 B: 1차 매도 후 슈팅 시 대응
+    // 25%를 덜어냈는데 주가가 150,000까지 슈팅했다면?
+    const shootingPrice = 150000; 
+    const lossFromSelling = actionShares * (shootingPrice - resLine); // 못 먹은 수익(손실)
+    const recoveryTarget = (avg * shares + lossFromSelling) / (shares - actionShares);
+
+    const output = document.getElementById('output');
+    document.getElementById('resultCard').style.display = 'block';
+
+    output.innerHTML = `
+        <strong>[구간 대응 로직]</strong><br>
+        - 25% 대응 물량: ${actionShares}주<br>
+        - 저항선 매도 수익/손실: <span style="color:${realizedPL >= 0 ? 'red' : 'blue'}">${realizedPL.toLocaleString()}원</span><br>
+        - <strong>핵심:</strong> 지지선(${supLine.toLocaleString()}원) 안착 시 ${actionShares}주 재매수하여 평단가 낮추기 반복.<br><br>
         
-        <label>종목명 또는 종목코드</label>
-        <input type="text" id="ticker" placeholder="예: 이수페타시스 또는 041510">
-        
-        <label>나의 평단가 (원)</label>
-        <input type="number" id="avgPrice" placeholder="예: 122700">
-        
-        <label>보유 주수 (주)</label>
-        <input type="number" id="shares" placeholder="예: 540">
-        
-        <button onclick="fetchServerData()" id="analyzeBtn">엔진 가동 및 지지/저항 확인</button>
-    </div>
-
-    <div class="card result-section" id="resultCard">
-        <h3 style="font-size: 16px; margin-top: 0; border-bottom: 2px solid #333; padding-bottom: 10px;">📉 서버 AI 판독 결과</h3>
-        
-        <div class="data-row">
-            <span>현재가 (종가 기준)</span>
-            <span id="currentPrice">로딩중...</span>
-        </div>
-        <div class="data-row">
-            <span>주요 저항선 (위 이평선/볼밴)</span>
-            <span class="highlight-red" id="resistanceLine">로딩중...</span>
-        </div>
-        <div class="data-row">
-            <span>주요 지지선 (아래 이평선/볼밴)</span>
-            <span class="highlight-blue" id="supportLine">로딩중...</span>
-        </div>
-
-        <div class="warning-box" id="disparityWarning">
-            <strong>⚠️ 이격도 체크:</strong> 분석 중...
-        </div>
-
-        <div class="bastion-box" id="weeklyBastion">
-            <strong>🛡️ 주봉 최종 보루:</strong> 분석 중...
-        </div>
-
-        <button style="background-color: #4b5563; margin-top: 15px;" onclick="runSimulation()">매도/재매수 시뮬레이션 실행</button>
-        
-        <div class="simulation-box" id="simulationResult"></div>
-    </div>
-
-    <script>
-        let serverResistance = 0;
-        let serverSupport = 0;
-
-        async function fetchServerData() {
-            const ticker = document.getElementById('ticker').value;
-            const avgPrice = document.getElementById('avgPrice').value;
-            const shares = document.getElementById('shares').value;
-
-            if(!ticker || !avgPrice || !shares) {
-                alert('종목명, 평단가, 보유주수를 모두 입력해주세요.');
-                return;
-            }
-
-            const btn = document.getElementById('analyzeBtn');
-            btn.innerText = "서버 엔진 통신 중... ⏳";
-            btn.disabled = true;
-            
-            document.getElementById('resultCard').style.display = 'block';
-            document.getElementById('simulationResult').style.display = 'none';
-
-            try {
-                // 선호님의 고정 주소로 확실하게 통신
-                const response = await fetch('https://project-9eedf.vercel.app/api/analyze?ticker=' + encodeURIComponent(ticker));
-                const data = await response.json();
-
-                serverResistance = data.resistanceLine;
-                serverSupport = data.supportLine;
-
-                document.getElementById('currentPrice').innerText = data.currentPrice.toLocaleString() + " 원";
-                document.getElementById('resistanceLine').innerText = data.resistanceLine.toLocaleString() + " 원";
-                document.getElementById('supportLine').innerText = data.supportLine.toLocaleString() + " 원";
-                
-                document.getElementById('disparityWarning').innerHTML = `
-                    <strong>⚠️ 이격도 체크:</strong> 현재 주가가 20일선 대비 <span style="color:red; font-weight:bold;">${data.disparity}%</span>로 벌어져 있습니다. 코어 앤 세틀라이트 전략에 따라 <strong>25% 비중 축소</strong>를 권고합니다.
-                `;
-
-                document.getElementById('weeklyBastion').innerHTML = `
-                    <strong>🛡️ 주봉 최종 보루:</strong> 주봉 지지선 위치는 <span style="color:blue; font-weight:bold;">${data.weeklyBastion.toLocaleString()} 원</span>입니다. 일봉 이탈 시 최후 방어선으로 설정하세요.
-                `;
-
-            } catch (error) {
-                alert("서버 통신 실패! 다시 시도해주세요.");
-            } finally {
-                btn.innerText = "엔진 가동 및 지지/저항 확인";
-                btn.disabled = false;
-            }
-        }
-
-        function runSimulation() {
-            const avgPrice = parseInt(document.getElementById('avgPrice').value);
-            const shares = parseInt(document.getElementById('shares').value);
-            
-            if(serverResistance === 0) {
-                alert("먼저 서버 엔진 분석을 완료해주세요.");
-                return;
-            }
-
-            // [수정1] 구간 대응 물량: 보유 물량의 25% (내림 처리)
-            const responseShares = Math.floor(shares * 0.25);
-            const sellAmount = responseShares * serverResistance;
-            const profit = responseShares * (serverResistance - avgPrice);
-            
-            // [수정2] 수익/손실 기호 완벽 분리 로직 (25% 물량)
-            let profitHtml = "";
-            if (profit > 0) {
-                profitHtml = `<span style="color:#e15241; font-weight:bold;">+${profit.toLocaleString()}원</span>`;
-            } else if (profit < 0) {
-                // profit 값 자체가 이미 마이너스를 포함하므로 '+'를 붙이지 않습니다.
-                profitHtml = `<span style="color:#3182f6; font-weight:bold;">${profit.toLocaleString()}원</span>`;
-            } else {
-                profitHtml = `<span style="font-weight:bold;">0원</span>`;
-            }
-
-            // 전량 매도
-            const allSellAmount = shares * serverResistance;
-            const allProfit = shares * (serverResistance - avgPrice);
-
-            // 수익/손실 기호 완벽 분리 로직 (전량 물량)
-            let allProfitHtml = "";
-            if (allProfit > 0) {
-                allProfitHtml = `<span style="color:#e15241; font-weight:bold;">+${allProfit.toLocaleString()}원</span>`;
-            } else if (allProfit < 0) {
-                allProfitHtml = `<span style="color:#3182f6; font-weight:bold;">${allProfit.toLocaleString()}원</span>`;
-            } else {
-                allProfitHtml = `<span style="font-weight:bold;">0원</span>`;
-            }
-
-            const simBox = document.getElementById('simulationResult');
-            simBox.style.display = 'block';
-            simBox.innerHTML = `
-                <strong style="font-size: 15px;">🔄 저항선(${serverResistance.toLocaleString()}원) 도달 시 시나리오</strong><br><br>
-                <strong>[시나리오 A] 코어 앤 세틀라이트 (25% 구간 대응)</strong><br>
-                - <strong>${responseShares}주 매도</strong> 시 확보 현금: ${sellAmount.toLocaleString()}원<br>
-                - <strong>확정 수익:</strong> ${profitHtml}<br>
-                - <strong>잔여 물량:</strong> ${shares - responseShares}주 홀딩<br>
-                - <strong>재매수 전략:</strong> 하락하여 지지선(${serverSupport.toLocaleString()}원) 안착 시 재매수<br><br>
-                
-                <strong>[시나리오 B] 전량 매도 대응</strong><br>
-                - <strong>${shares}주 매도</strong> 시 확보 현금: ${allSellAmount.toLocaleString()}원<br>
-                - <strong>확정 수익:</strong> ${allProfitHtml}<br>
-                - 💡 <em>주의: 매도가 끝나더라도 박자감을 놓치지 않기 위해 시장가로 1주를 다시 매수하여 <strong>정찰병</strong>으로 남겨두세요!</em>
-            `;
-        }
-    </script>
+        <strong>[시나리오 B: 매도 후 슈팅 발생 시]</strong><br>
+        - 슈팅 기준가(${shootingPrice.toLocaleString()}원) 대비 미실현 손실: <span style="color:blue">${lossFromSelling.toLocaleString()}원</span><br>
+        - <strong>회복 목표가:</strong> 잔여 ${shares - actionShares}주를 <span style="color:red; font-weight:bold;">${Math.floor(recoveryTarget).toLocaleString()}원</span>에 매도 시 손실 완벽 회복.
+    `;
+}
+</script>
 </body>
 </html>
