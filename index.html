@@ -112,28 +112,28 @@ function calculateStrategy() {
     const actionShares25 = Math.floor(shares * 0.25);
     const actionShares50 = Math.floor(shares * 0.50);
 
-    // [시나리오 A: 파도타기 (지지선 재매수 완료 시)]
+    // [시나리오 A: 파도타기 로직]
     const realizedPL = actionShares25 * (res - avg);
-    const cashSecured = actionShares25 * res; // 저항선에서 팔아서 생긴 돈
-    const buybackCost = actionShares25 * sup; // 지지선에서 다시 살 때 드는 돈
-    const remainingCash = cashSecured - buybackCost; // 파도타기 1회전 완료 후 남는 순수익금
+    const cashSecured = actionShares25 * res; // 매도 시 확보 현금
+    const buybackCost = actionShares25 * sup; // 재매수 시 소모 현금
+    const remainingCash = cashSecured - buybackCost; // 파도타기 1회전 완료 후 남는 순수 현금 차익
 
-    // 새로운 평단가 산출 로직: (기존 총 투자금 - 고점 매도금액 + 저점 재매수금액) / 원래 주수
+    // 재매수 완료 후 새로운 평단가 산출
     const newTotalCost = (avg * shares) - cashSecured + buybackCost;
     const finalNewAvg = newTotalCost / shares;
 
-    // [시나리오 B: 본전 직행 능동 복구]
+    // [시나리오 B: 본전 직행 로직]
     const totalCostB = avg * shares;
     const targetPriceB = (totalCostB - (actionShares25 * res) - (actionShares25 * avg)) / actionShares50;
 
     const strategyOutput = document.getElementById('strategyOutput');
     strategyOutput.innerHTML = `
-        <strong>[1. 시나리오 A: 파도타기 (재매수 완료 시)]</strong><br>
+        <strong>[1. 시나리오 A: 파도타기]</strong><br>
         - 25% 저항선 매도: ${actionShares25}주 @ ${res.toLocaleString()}원<br>
         - 확정 손익: <span class="${realizedPL >= 0 ? 'highlight' : 'blue'}">${realizedPL.toLocaleString()}원</span><br>
-        - 💡 <strong class="blue">재매수 대응:</strong> 지지선(<span class="blue">${sup.toLocaleString()}원</span>)에서 ${actionShares25}주 다시 채워넣기<br>
-        - <strong>새로운 평단가:</strong> <span class="highlight">${Math.floor(finalNewAvg).toLocaleString()}원</span> (원래 비중 ${shares}주로 복귀)<br>
-        - <strong>남은 확보 현금:</strong> <span class="highlight">+${remainingCash.toLocaleString()}원</span><br><br>
+        - 💡 <strong class="blue">대응:</strong> 주가가 <span class="blue">${sup.toLocaleString()}원(지지선)</span>까지 눌릴 경우, 확보한 현금으로 ${actionShares25}주 재매수.<br>
+        - <strong>새로운 평단가:</strong> <span class="highlight">${Math.floor(finalNewAvg).toLocaleString()}원</span> (총 ${shares}주)<br>
+        - <strong>최종 확보 현금:</strong> <span class="highlight">${remainingCash >= 0 ? '+' : ''}${remainingCash.toLocaleString()}원</span><br><br>
         
         <strong>[2. 시나리오 B: 슈팅 시 본전 직행]</strong><br>
         - 저항선 매도(25%): ${actionShares25}주 @ ${res.toLocaleString()}원<br>
