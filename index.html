@@ -2,21 +2,34 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>구간대응 & 차트분석 통합 엔진</title>
     <style>
-        body { font-family: 'Malgun Gothic', sans-serif; background-color: #f8f9fa; padding: 20px; max-width: 800px; margin: 0 auto; }
+        /* 모바일 여백과 터치감을 고려한 UI 수정 */
+        body { font-family: 'Malgun Gothic', sans-serif; background-color: #f8f9fa; padding: 15px; max-width: 800px; margin: 0 auto; box-sizing: border-box; }
         .card { background: white; border-radius: 12px; padding: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-bottom: 20px; }
         label { font-size: 13px; font-weight: bold; color: #4a5568; margin-top: 10px; display: block; }
-        input { width: 100%; padding: 12px; margin: 5px 0 15px 0; border: 1px solid #ced4da; border-radius: 6px; box-sizing: border-box; }
-        button { width: 100%; padding: 15px; background-color: #1a365d; color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; }
+        
+        /* 모바일에서 입력창 터치가 쉽도록 큼직하게 조정 */
+        input { width: 100%; padding: 14px; margin: 5px 0 15px 0; border: 1px solid #ced4da; border-radius: 8px; box-sizing: border-box; font-size: 16px; background-color: #ffffff; }
+        input:focus { outline: none; border-color: #3182f6; }
+        
+        button { width: 100%; padding: 16px; background-color: #1a365d; color: white; border: none; border-radius: 8px; font-weight: bold; font-size: 16px; cursor: pointer; }
         .btn-secondary { background-color: #2b6cb0; margin-top: 10px; }
-        .result-box { background: #f1f5f9; padding: 15px; border-radius: 8px; line-height: 1.8; font-size: 14px; margin-bottom: 15px; }
-        .chart-box { background: #e2e8f0; border-left: 4px solid #4a5568; padding: 15px; border-radius: 8px; line-height: 1.6; font-size: 14px; margin-bottom: 20px;}
+        
+        .result-box { background: #f1f5f9; padding: 15px; border-radius: 8px; line-height: 1.8; font-size: 14px; margin-bottom: 15px; word-break: keep-all; }
+        .chart-box { background: #e2e8f0; border-left: 4px solid #4a5568; padding: 15px; border-radius: 8px; line-height: 1.6; font-size: 14px; margin-bottom: 20px; word-break: keep-all; }
         .highlight { font-weight: bold; color: #c53030; }
         .blue { color: #2b6cb0; font-weight: bold; }
+        h2 { font-size: 18px; margin-top: 0; }
         h3 { margin-top: 0; font-size: 16px; border-bottom: 2px solid #cbd5e1; padding-bottom: 8px; }
-        .input-group { display: flex; gap: 10px; }
-        .input-group > div { flex: 1; }
+        
+        /* PC에서는 양옆으로, 모바일에서는 위아래로 떨어지게 만드는 반응형 마법 */
+        .input-group { display: flex; flex-wrap: wrap; gap: 10px; }
+        .input-group > div { flex: 1; min-width: 100%; } 
+        @media (min-width: 600px) {
+            .input-group > div { min-width: calc(50% - 10px); }
+        }
     </style>
 </head>
 <body>
@@ -24,17 +37,17 @@
 <div class="card">
     <h2>🎯 1단계: 종목 차트 분석</h2>
     <label>종목명 (예: 이수페타시스)</label>
-    <div style="display: flex; gap: 10px;">
-        <input type="text" id="ticker" placeholder="종목명 입력" style="margin-bottom: 0;">
-        <button onclick="fetchChartData()" id="fetchBtn" style="width: 150px; margin-top: 0;">차트 불러오기</button>
+    <div style="display: flex; gap: 8px;">
+        <input type="text" id="ticker" placeholder="종목명 입력" style="margin-bottom: 0; flex: 1;">
+        <button onclick="fetchChartData()" id="fetchBtn" style="width: 110px; margin-top: 0; padding: 14px; font-size: 14px;">차트 호출</button>
     </div>
 </div>
 
 <div class="card" id="analysisSection" style="display:none;">
-    <h3>📊 서버 차트 분석 요약 (자동 판독)</h3>
+    <h3>📊 서버 차트 분석 요약</h3>
     <div id="chartOutput" class="chart-box"></div>
     
-    <h2>🎯 2단계: 대응 전략 세팅 및 시뮬레이션</h2>
+    <h2 style="margin-top: 25px;">🎯 2단계: 대응 전략 세팅</h2>
     
     <div class="input-group">
         <div>
@@ -49,11 +62,11 @@
 
     <div class="input-group">
         <div>
-            <label>📈 1차 저항선 (목표 매도가) - 수정 가능</label>
+            <label>📈 1차 저항선 (수정 가능)</label>
             <input type="number" id="resPrice" style="background-color: #fff5f5; border-color: #feb2b2;">
         </div>
         <div>
-            <label>📉 1차 지지선 (재매수 타점) - 수정 가능</label>
+            <label>📉 1차 지지선 (수정 가능)</label>
             <input type="number" id="supPrice" style="background-color: #ebf8ff; border-color: #90cdf4;">
         </div>
     </div>
@@ -72,7 +85,7 @@ async function fetchChartData() {
     if(!ticker) { alert("종목명을 입력해주세요."); return; }
 
     const btn = document.getElementById('fetchBtn');
-    btn.innerText = "불러오는 중...";
+    btn.innerText = "로딩중...";
     btn.disabled = true;
 
     try {
@@ -84,7 +97,7 @@ async function fetchChartData() {
             <strong>현재가:</strong> ${chartData.currentPrice.toLocaleString()}원<br>
             <strong>주요 이평선:</strong> 5일(${chartData.ma5.toLocaleString()}) / 20일(${chartData.ma20.toLocaleString()}) / 60일(${chartData.ma60.toLocaleString()}) / 120일(${chartData.ma120.toLocaleString()})<br>
             <strong>볼린저 밴드:</strong> 상단 <span class="highlight">${chartData.bollingerUpper.toLocaleString()}원</span> / 하단 <span class="blue">${chartData.bollingerLower.toLocaleString()}원</span><br>
-            <strong>보조지표 상태:</strong> RSI ${chartData.rsi} | ${chartData.trend}
+            <strong>보조지표:</strong> RSI ${chartData.rsi} | ${chartData.trend}
         `;
 
         document.getElementById('resPrice').value = chartData.autoResistance;
@@ -96,7 +109,7 @@ async function fetchChartData() {
     } catch (e) {
         alert("통신 에러: API 서버 상태를 확인해주세요.");
     } finally {
-        btn.innerText = "차트 불러오기";
+        btn.innerText = "차트 호출";
         btn.disabled = false;
     }
 }
@@ -114,11 +127,10 @@ function calculateStrategy() {
 
     // [시나리오 A: 파도타기 로직]
     const realizedPL = actionShares25 * (res - avg);
-    const cashSecured = actionShares25 * res; // 매도 시 확보 현금
-    const buybackCost = actionShares25 * sup; // 재매수 시 소모 현금
-    const remainingCash = cashSecured - buybackCost; // 파도타기 1회전 완료 후 남는 순수 현금 차익
+    const cashSecured = actionShares25 * res; 
+    const buybackCost = actionShares25 * sup; 
+    const remainingCash = cashSecured - buybackCost; 
 
-    // 재매수 완료 후 새로운 평단가 산출
     const newTotalCost = (avg * shares) - cashSecured + buybackCost;
     const finalNewAvg = newTotalCost / shares;
 
